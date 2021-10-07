@@ -33,16 +33,19 @@ def fix_article_only_sections(text):
     
     Fix strings like:
 
-        \mode<article>{%
-        \section*{Objectives}
+        
+        \\mode<article>{%
+        \\section*{Objectives}
         }% end mode<article>
 
     To:
 
-        \section<article>*{Objectives}
+        \\section<article>*{Objectives}
     """
-    text = re.sub(r"^\\mode<article>\{%?\n\\section\*\{(.*?)\}.*\}.*$",
-        r"\\section<article>*{\1}",
+    text = re.sub(
+        # r"^\\mode<article>\{%?\n\\section\*\{(.*?)\}.*?\}.*$",
+        r"\\mode<article>\{\%?\n\\section\*\{(.*?)\}\n?\}.*$",
+        r"\\section<article>*{\1}\n",
         text,
         flags=re.MULTILINE)
     return text
@@ -97,7 +100,7 @@ def fix_driver_block(text):
 
 
 def fix_documentclass_declaration(text):
-    """Update the `\documentclass` declaration block"""
+    """Update the `\\documentclass` declaration block"""
     text = re.sub(
         r'\\documentclass.*\\title',
         r"""\\documentclass
