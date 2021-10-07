@@ -1,11 +1,27 @@
 #!/usr/bin/env python
 
+from datetime import datetime
 import logging
 import re
 
 import click
 
+def add_signature(text):
+    """Add a program signature line"""
+    text += "%% Fixed by {} on {}".format(__name__,datetime.now().isoformat())
+    return text
 
+
+def fix_date(text,date):
+    """Update the line that declares the date"""
+    fdate = date.strftime("{%d}{%m}{%Y}")
+    logging.debug(f"{fdate=}")
+    text = re.sub(
+        r'^\\newdate\{lessondate\}.*$',
+        r'\\newdate{lessondate}' + fdate,
+        text,
+        flags=re.MULTILINE)
+    return text
 
 # cli helper
 def set_log_level(ctx, param, value):
@@ -17,9 +33,17 @@ def set_log_level(ctx, param, value):
     if value:
         logging.basicConfig(level=levels[param.name])
 
+def process_option_date(ctx,param,value):
+    """Convert the string date provided on the command line
+    to a `datetime.datetime` object"""
+    if value is None:
+        result = datetime.now()
+    else:
+        result = datetime.fromisoformat(value)
+    return result 
 
 @click.command(
-    help="""Fix HTML issues created by the Sakai to Brightspace conversion.
+    help="""Update lesson docstrip files
     
     INPUT can be a file, or - or empty for stdin.
     """
@@ -35,9 +59,15 @@ def set_log_level(ctx, param, value):
     is_flag=True,
     expose_value=False,
     callback=set_log_level)
-def cli(input):
+@click.option('--date',
+    help='date to stamp file (ISO 8601 format)',
+    default=None,
+    callback=process_option_date)
+def cli(date,input):
     logging.info("Hello, world!")
     text = input.read().decode()
+    text = fix_date(text,date)
+    text = add_signature(text)
     print(text)
 
 
