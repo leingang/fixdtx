@@ -13,6 +13,28 @@ def test_fix_quotes(test_input,expected):
 
 
 @pytest.mark.parametrize("test_input,expected",[
+    ('\n'.join([
+        r'\title[',
+        r'%	short title=,',
+        r'	lesson number=15,',
+        r'	textbook section=11.6',
+        r'	]{Directional Derivatives and the Gradient Vector Field}',
+        r'\input{../course.def}'
+    ]),
+    '\n'.join([
+        r'\title[',
+        r'%    short title=,',
+        r'    lesson number=15,',
+        r'    textbook section=11.6',
+        r'    ]{Directional Derivatives and the Gradient Vector Field}',
+        r'\input{../course.def}'
+    ]))
+])
+def test_fix_tabs(test_input,expected):
+    assert fix.fix_tabs(test_input) == expected
+
+
+@pytest.mark.parametrize("test_input,expected",[
     (
         '\n'.join([r'\mode<article>{',r'\section*{Do Now}}']),
         '\n'.join([r'\section<article>*{Do Now}',''])
