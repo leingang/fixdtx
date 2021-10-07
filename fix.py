@@ -96,6 +96,25 @@ def fix_driver_block(text):
     return text
 
 
+def fix_documentclass_declaration(text):
+    """Update the `\documentclass` declaration block"""
+    text = re.sub(
+        r'\\documentclass.*\\title',
+        r"""\\documentclass
+%<slides|handout>[ignorenonframetext,aspectratio=169]
+%<slides>{ngelessonslides}
+%<handout>{ngelessonhandout}
+%<plan>{ngelessonplan}
+%<worksheet&solutions>[solutions]
+%<worksheet>{ngelessonworksheet}
+\\title""",
+        text,
+        flags=re.DOTALL
+    )
+    return text
+
+
+
 # Command line helpers
 def set_log_level(ctx, param, value):
     """Set the logging level"""
@@ -144,6 +163,7 @@ def cli(date,input):
     text = fix_driver_block(text)
     text = fix_date(text,date)
     text = fix_article_only_sections(text)
+    text = fix_documentclass_declaration(text)
     text = fix_quotes(text)
     text = fix_tabs(text)
     text = add_signature(text)
