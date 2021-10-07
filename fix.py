@@ -60,6 +60,12 @@ def fix_quotes(text):
     )
     return text
 
+
+def fix_tabs(text):
+    """Replace tabs with four spaces"""
+    return text.replace('\t','    ')
+
+
 # Command line helpers
 def set_log_level(ctx, param, value):
     """Set the logging level"""
@@ -108,6 +114,7 @@ def cli(date,input):
     text = fix_date(text,date)
     text = fix_article_only_sections(text)
     text = fix_quotes(text)
+    text = fix_tabs(text)
     text = add_signature(text)
     print(text)
 
