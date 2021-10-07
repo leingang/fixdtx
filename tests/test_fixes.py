@@ -1,3 +1,4 @@
+from datetime import datetime
 import pytest
 
 import fix
@@ -46,3 +47,9 @@ def test_fix_quotes(test_input,expected):
 def test_fix_article_only_sections(test_input,expected):
     assert fix.fix_article_only_sections(test_input) == expected
 
+
+def test_fix_date():
+    dt = datetime(2021,10,7)
+    test_input = r'\newdate{lessondate}{8}{3}{2016}'
+    expected = r'\newdate{lessondate}{07}{10}{2021}'
+    assert fix.fix_date(test_input,dt) == expected
