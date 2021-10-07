@@ -27,7 +27,28 @@ def fix_date(text,date):
         flags=re.MULTILINE)
     return text
 
-# cli helper
+
+def fix_article_only_sections(text):
+    """Update sections that are declared article mode only.
+    
+    Fix strings like:
+
+        \mode<article>{%
+        \section*{Objectives}
+        }% end mode<article>
+
+    To:
+
+        \section<article>*{Objectives}
+    """
+    text = re.sub(r"^\\mode<article>\{%?\n\\section\*\{(.*?)\}.*\}.*$",
+        r"\\section<article>*{\1}",
+        text,
+        flags=re.MULTILINE)
+    return text
+
+
+# Command line helpers
 def set_log_level(ctx, param, value):
     """Set the logging level"""
     levels = {
@@ -71,6 +92,7 @@ def cli(date,input):
     logging.info("Hello, world!")
     text = input.read().decode()
     text = fix_date(text,date)
+    text = fix_article_only_sections(text)
     text = add_signature(text)
     print(text)
 
