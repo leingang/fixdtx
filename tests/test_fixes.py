@@ -3,8 +3,12 @@ import pytest
 import fix
 
 
-def test_fix_quotes():
-    assert fix.fix_quotes("``foo''") == "“foo”"
+@pytest.mark.parametrize("test_input,expected",[
+    ("``foo''","“foo”"),
+    ("`foo'","‘foo’")
+])
+def test_fix_quotes(test_input,expected):
+    assert fix.fix_quotes(test_input) == expected
 
 
 @pytest.mark.parametrize("test_input,expected",[

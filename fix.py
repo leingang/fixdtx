@@ -61,6 +61,7 @@ def fix_quotes(text):
         text,
         flags=re.MULTILINE
     )
+    text = re.sub(r"`(.*?)'",r"‘\1’",text,flags=re.MULTILINE)
     return text
 
 
