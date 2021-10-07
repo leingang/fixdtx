@@ -1,4 +1,4 @@
-#!/opt/local/bin/gawk -f
+#!/usr/bin/env gawk -f
 BEGIN {
    print "% Fixed by fix.awk " strftime("%F %T")
    announcements_block_fixed=0
@@ -12,13 +12,16 @@ BEGIN {
    }
    docdate_en = strftime("%B %e, %Y",docdate_ts)
    docdate_iso = strftime("%F",docdate_ts)
+   docdate_tex = strftime("{%d}{%m}{%Y}",docdate_ts)
 }
 
 # fix date
-/^\\date/ {
-    print "\\date{" docdate_en "}"
+# \newdate{lessondate}{8}{3}{2016}
+/^\\newdate\{lessondate\}/ {
+    print "\\newdate{lessondate}" docdate_tex
     next
 }
+
 # fix course section
 # FIXME: course may not be on a single line.
 /^\\course/ {
