@@ -1,0 +1,858 @@
+% Fixed by fix.awk 2015-03-09 12:06:49
+%%!TEX TS-program = dtxmake
+%%!TEX dtxmake-subengine = xelatexmk
+%<*driver>
+\newwrite\configfile
+\def\writeconfig{\begingroup\setwccatcodes\innerwriteconfig}
+\def\setwccatcodes{\catcode`\#=12 \catcode`\%=12 }
+\def\innerwriteconfig#1{\immediate\write\configfile{\unexpanded{#1}}\endgroup}
+\immediate\openout\configfile=bundledoc.cfg
+\writeconfig{
+bundle: (pdftk $BDBASE.pdf attach_files $BDINPUTS/* output $BDBASE.bd.pdf)^^J
+find:   /usr/texbin/kpsewhich -progname=latex $BDINPUTS^^J
+}
+\immediate\closeout\configfile
+\immediate\openout\configfile=.latexmkrc
+\immediate\write\configfile{%
+push @generated_exts, "ttl";^^J
+push @generated_exts, "bbl";^^J
+push @generated_exts, "fls";^^J
+push @generated_exts, "synctex.gz";^^J
+push @generated_exts, "dep";^^J
+push @generated_exts, "md5";^^J
+push @generated_exts, "tex.md5";^^J
+}
+\immediate\closeout\configfile
+% archive script
+% create a blank evernote and get its URL first
+\def\evernoteURL{}
+\immediate\openout\configfile=archive.sh
+\writeconfig{
+#!/bin/sh -v^^J
+for file in `ls *.dep`; do /usr/texbin/bundledoc --verbose --config=bundledoc.cfg --include=*.dtx $file; done^^J
+latexmk -c^^J
+rm -f *.bbl *.log *.{ws,ws-sol,lp}.tex
+}
+\immediate\closeout\configfile
+\immediate\openout\configfile=config.def
+\immediate\write\configfile{\string\def\string\rootjobname{\jobname}}
+\immediate\write\configfile{\string\def\string\evernoteURL{\evernoteURL}}
+\immediate\closeout\configfile
+\input docstrip.tex
+\askforoverwritefalse
+\generate{
+    \file{\jobname.lp.tex}{\from{\jobname.dtx}{lesson,plan}}          
+    \file{\jobname.ws.tex}{\from{\jobname.dtx}{worksheet}}
+    \file{\jobname.ws-sol.tex}{\from{\jobname.dtx}{worksheet,solutions}}
+}
+\endbatchfile
+%</driver>
+\documentclass
+%<slides|handout>[ignorenonframetext,aspectratio=169,14pt]
+%<slides>{ngelessonslides}
+%<handout>{ngelessonhandout}
+%<plan>{ngelessonplan}
+%<worksheet&solutions>[solutions]
+%<worksheet>{ngelessonworksheet}
+%%
+\title[
+%	short title=,
+	lesson number=16,
+	textbook section=11.7
+	]{Maximum and Minimum Values}
+\input{../course.def}
+\usepackage[us]{datetime}
+\newdate{lessondate}{8}{3}{2016}
+\edef\lessondateiso{\getdateyear{lessondate}-\twodigit{\getdatemonth{lessondate}}-\twodigit{\getdateday{lessondate}}}
+\date{\displaydate{lessondate}}
+\author{Professor Matthew Leingang}
+\institute[NYU]{New York University}
+\makeatletter
+\keyword{course: \ngelesson@course@code\space\insertcoursename}
+\keyword{term: \ngelesson@term}
+\keyword{STEC\ngelesson@textbooksection}% must fix if chap > 9
+\keyword{\insertcoursename}
+\makeatother
+\keywords{Fermat's Theorem, maximum value, minimum value}
+\lessondescription{A central application of multi-variable calculus is to extremize
+functions of two variables. One first identifies critical points,
+points where the gradient vanishes. The nature of these critical points
+can be established using the second derivative test. There will 
+be three fundamentally different cases: local maxima, local minima 
+as well as saddle points.}% Oliver's description
+\input config.def
+\usepackage{siunitx}
+\usepackage{overpic}
+\usepackage{snapshot}
+\usepackage{xr}
+\usepackage{zref-xr,zref-user}
+\usepackage{textcomp}
+\externaldocument{\rootjobname.ws}
+%<*lesson>
+\usetheme
+%<OpenEd>[margins]
+{NYUOpenEd}
+%\useoutertheme{infolines}% to test metadata setting
+%<*plan>
+\usepackage[no-math]{fontspec}
+\usepackage{xltxtra}
+\defaultfontfeatures{Mapping=tex-text}
+\setmainfont{Cambria}
+%\setmathrm{Cambria Math}
+\setsansfont{Calibri}
+%</plan>
+
+\usepackage{leincalc}
+\usepackage{tikz}
+\usetikzlibrary{MATH-UA-123}
+
+
+
+\newcommand{\newVector}[2]{
+	\newcommand{#1}{\Vector{#2}}
+}
+\newVector{\va}{a}
+\newVector{\vb}{b}
+\newVector{\vc}{c}
+\newVector{\vF}{F}
+\newVector{\vr}{r}
+\newVector{\vT}{T}
+\newVector{\vn}{n}
+\newcommand{\dr}{d\vr}
+\newcommand{\dS}{d\Vector{S}}
+
+\usepackage{hyperref}
+\makeatletter
+\hypersetup{colorlinks=true,
+citecolor=tertiary,
+filecolor=primary,
+urlcolor=primary,
+pdftitle=\ngelesson@longtitle,
+pdfauthor=\insertauthor,
+pdfsubject=\insertcoursename,
+pdfkeywords=\the\ngelesson@keywords,
+}
+\makeatother
+
+\usepackage{datatool}
+\DTLloaddb{announcements}{../announcements.csv}
+\dtlsort{endDate}{announcements}{\dtlcompare}
+\begin{document}
+
+\begin{frame}[plain]
+\maketitle
+
+\section*{Announcements}
+\timecheck{\LARGE\clock{2}{00}}
+\begin{itemize}
+\DTLforeach[\DTLisgt{\endDate}{\lessondateiso}\and\not\DTLisgt{\startDate}{\lessondateiso}]{announcements}{\annText=announcementText,\endDate=endDate,\startDate=startDate}{\item \annText}
+\end{itemize}
+%\mode<presentation>{\photocredit{}{}}
+\end{frame}
+
+
+%\mode<all>{\egroup}
+
+\begin{tikzpicture}[remember picture,overlay]
+\node[anchor=north west] at ([xshift=0.5in,yshift=-0.5in]current page.north west) 
+{\includegraphics[width=2.5in]{NYUCourant}};
+\end{tikzpicture}
+
+
+
+
+
+\mode<article>{%
+\section*{Objectives}
+}% end mode<article>
+
+\begin{frame}{Objectives}
+\begin{columns}
+\begin{column}{0.45\textwidth}
+\begin{itemize}
+\item Find the critical points of a function of several variables.
+\item Classify the critical points of a function of two variables.
+\end{itemize}\end{column}
+\begin{column}{0.45\textwidth}
+\mode<presentation>{\includegraphics[width=\textwidth]{Anonymous_target_with_arrow}}
+\end{column}
+\end{columns}
+\end{frame}
+
+
+\subsection*{Notes}
+
+\makeatletter
+See also \cite[Section \ngelesson@textbooksection]{Stewart-EC}.
+\makeatother
+
+Oliver's summary: A central application of multi-variable calculus is to \textbf{extremize}
+functions of two variables. One first identifies \textbf{critical points}, 
+points where the gradient vanishes. The nature of these critical points
+can be established using the \textbf{second derivative test}. There will 
+be three fundamentally different cases: \textbf{local maxima}, \textbf{local minima} 
+as well as \textbf{saddle points}. 
+
+\subsubsection{Fall 2015}
+
+After class, I rewrote the section deriving the quadratic approximation.  This should tighten it up a bit.
+Otherwise, don't add anything.  With the Do Now/Anticipatory Set this lesson will fill up 1:50 easily.
+
+\subsubsection{Spring 2015}
+
+Blind copy (I guess).
+
+\subsubsection{Fall 2014}
+
+Blind copy.
+
+\subsubsection{Fall 2013}
+
+See \href{}{notes in Evernote \includegraphics{Icon_External_Link.pdf}}.
+
+
+\section*{Materials}
+
+\begin{itemize}
+\item colored chalk/markers
+\end{itemize}
+
+
+\mode<article>{
+\section*{Do Now}}
+
+
+Let $F(x,y,z) = z-x^2-y^2$.  Find $\nabla f$.
+Sketch the level surface $F=0$ and draw $\nabla f$ at various points $P$ attached to $P$:
+$(0,0,0)$, $(\pm1,0,1)$, $(0,\pm1,1)$.
+
+
+
+
+\mode<article>{%
+\section*{Anticipatory Set}}
+\timecheck{\LARGE\clock{9}{10}}
+
+One of the most important problems in calculus is finding the maximum and minimum values of a function.
+In one-variable calculus, we learned to take derivatives to find critical points, and something called the \emph{second derivative test} for determining whether a critical point was positive or negative.
+
+You may want to review Sections 4.1 and 4.3 to refresh yourself on this.
+
+\begin{example}
+Let $f(x) = x^3 - 3x$.  Find and classify the local maxima and minima.
+\begin{solution}
+\emph{Fermat's Theorem} says that the local extrema occur where $f'(x) =0$.
+We have
+\[
+	f'(x) = 3x^2 - 3 = 3 (x+1)(x-1)
+\]
+So the critical points are $x = \pm 1$.  
+
+The \emph{Second Derivative Test} says the sign of the second derivative at a critical point can be used to classify that critical point.  We have:
+\[
+	f''(x) = 6x.
+\]
+So $f''(1) = 6 > 0$, meaning this critical point is a minimum.  Near that point, the graph of the function looks like $y=3x^2$.  Hence, a minimum.  OTOH, $f''(-1) < 0$, so this point is a local maximum.
+\end{solution}
+\end{example}
+
+Why does this work?
+The linear approximation of a one-variable function $f(x)$ near $a$ is
+\[
+	f(a) \approx f(a) + f'(a) h
+\]
+and if we take it one step further we may say
+\[
+	f(a+h) \approx f(a) + f'(a) h + \tfrac12 f''(a) h^2
+\]
+(The error is equal to $\frac{1}{6}f'''(z)h^3$ for some $z$ between $0$ and $h$.
+So if $h$ is small and $f'''$ is bounded the error is small.  This is from Taylor's theorem)
+This approximation illustrates the second derivative test for one-variable functions.
+If $f'(a) = 0$ and $f''(a) > 0$, then the graph of $f$ looks like an upward opening parabola with a vertex at $(a,f(a))$.
+\Do{sketch}
+
+We want to generalize this to higher dimensions.  
+\begin{itemize}
+\item What is the analog of the condition that $f'(a) = 0$?  
+\item What is the analog of the second derivative?
+\item What is the analog of the second derivative test?
+\end{itemize}
+
+
+
+\tableofcontents
+
+
+\mode<article>{%
+\section*{Procedure}}
+\section{Critical Points}
+
+\begin{definition}
+A function of two variables has a \defined{local maximum} at $(a,b)$ if $f(x,y) \leq f(a,b)$ whenever $(x,y)$ is near $(a,b)$.  [This means that $f(x,y) \leq f(a,b)$ for all points $(x,y)$ in some disk with center $(a,b)$.]  The number $f(a,b)$ is called a \defined{local maximum value}.  If $f(x,y) \geq f(a,b)$ when $(x,y)$ is near $(a,b)$, then $f(a,b)$ is called a \defined{local minimum value}.
+\end{definition}
+
+If the inequalities hold for all $(x,y)$ in the domain of $f$, then $f$ has an \defined{absolute maximum} (or \defined{absolute minimum}) at $(a,b)$.
+
+\begin{theorem}[Fermat's Theorem]
+If $f$ has a local maximum or minimum at $(a,b)$, and the first-order partial derivatives of $f$ exist there, then $f_x(a,b) = 0$ and $f_y(a,b) = 0$.
+\end{theorem}
+
+\begin{proof}
+The one-variable function $g(x) = f(x,b)$ has a local maximum (or minimum) at $x=a$, so by the ordinary Fermat's theorem, $g'(a) = 0$.  But $g'(a) = f_x(a,b)$.  
+We can do the same thing for $y \mapsto f(a,y)$.
+\end{proof}
+
+We call $(a,b)$ a \defined{critical point} of $f$ if $f_x(a,b) = 0$ and $f_y(a,b) = 0$.
+In more vector terms, we say $\nabla{f}(a,b) = \Vector{0}$.
+This makes sense in terms of the geometric significance of the gradient: $\nabla f$ points in the direction of greatest increase of $f$.
+If $\nabla{f}(a,b) = \Vector{0}$, there is no direction that will increase $f$.
+
+\begin{example}
+\label{example:1}
+Let $f(x,y) = 6x^2 - 2x^3 + 3y^2 + 6xy$.
+Find the critical points.
+\begin{solution}
+\begin{align*}
+	\frac{\partial f}{\partial x}(x,y)
+		&= 12x - 6x^2 + 6y  \\
+	\frac{\partial f}{\partial x}(x,y)
+		&= 6y+6x  \\
+\end{align*}
+If $6y+6x =0$, then $y=-x$, and substituting into the first one we get
+\[
+	12x - 6x ^2 - 6x = 6x - 6x^2 = 6x(1-x).
+\]
+So the critical points are $x=0$ (hence $y=0$) and $x=1$ (hence $y=-1$).
+\end{solution}
+\end{example}
+
+\begin{practice}% E&P, Example 12.5.3
+Find the critical points of the function
+\[
+	f(x,y) = \frac{3}{4}y^2 + \frac{1}{24}y^3 - \frac{1}{32}y^4 -x^2
+\]
+\begin{solution}
+We have
+\begin{align*}
+	\pderiv{f}{x} &= -2x  \\
+	\pderiv{f}{y} &= \frac{3}{2}y + \frac{1}{8} y^2 - \frac{1}{8} y^3 \\
+	&= -\frac{1}{8}y(y^2-y-12) = -\frac{1}{8}y(y+3)(y-4)
+\end{align*}
+Setting $\pderiv{f}{x}=0$ and $\pderiv{f}{y} = 0$ gives $x=0$, and $y=0$, $-3$, or $4$.
+So there are three critical points: $(0,0)$, $(0,-3)$, $(0,4)$.
+\end{solution}
+\end{practice}
+
+\begin{practice}% E&P Exercise 12.5.19
+Find the critical points of the function
+\[
+f(x,y) = 2x^2 + 8xy + y^4
+\]
+\begin{solution}
+The critical points are $(0,0)$, $(4,-2)$, and $(-4,2)$.
+\end{solution}
+\end{practice}
+
+\Do{Perfect place for a break}
+
+\section{In Search of a Second Derivative Test}
+\subsection{Quadratic forms and the Hessian}
+%\timecheck{\LARGE\clock{11}{15}}
+
+\marginpar{\dbend}
+
+The problem of twice-differentiation is that it seems somewhat incomplete.  We need to look at more than just the second derivatives
+$\frac{\partial^2f }{\partial x^2}$ and $\frac{\partial^2f }{\partial y^2}$.  After all, each $\frac{\partial f}{\partial x_i}$ is a function of two variables, and so second derivatives of $f$ should include all derivatives of each partial derivative.  This means there are $4$ partial derivatives.
+
+\begin{fact}
+    Let $f$ have all third-order derivatives continuous near $(a,b)$.
+    Then for small $h$ and $k$,
+    \begin{multline}
+        f(a+h,b+k) \approx
+            f(a,b) 
+            + f_{x}(a,b)h + f_{y}(a,b)k \\
+            + \frac12f_{xx}(a,b)h^2 + f_{xy}(a,b)hk + \frac12f_{yy}(a,b)k^2.
+    \label{eqn:quad-approx-2var}
+    \end{multline}
+\end{fact}
+\begin{proof}
+    Let
+    \(
+        g(t) = f(a+th,b+tk)
+    \).
+    Then by our one-variable Taylor's theorem:
+    \begin{equation}
+        g(1) \approx g(0) + g'(0)(1) + \frac{1}{2} g''(0)(1)^2
+        \label{eqn:quad-approx-1var}
+    \end{equation}
+    Now 
+    \begin{equation}
+        g(1) = f(a+h,b+k)\text{ and } g(0) = f(a,b)
+        \label{eqn:quad-approx-2var!0o}
+    \end{equation}
+    Also,
+    \[\begin{split}
+         g'(t) &= \pderiv{f}{x}\D{x}{t} + \pderiv{f}{y}\D{y}{t} \\
+         &= \pderiv{f}{x}(a+th,b+tk) h + \pderiv{f}{y}(a+th,b+tk) k \\
+    \end{split}\]
+    Therefore 
+    \begin{equation}
+        g'(0) = f_x(a,b)h + f_y(a,b) k
+        \label{eqn:quad-approx-2var!1o}
+    \end{equation}
+    
+    Furthermore,
+    \mathtoolsset{firstline-afterskip=5em}%
+    \[\begin{split}%
+        g''(t) &\begin{multlined}[t]= \pderiv{}{x}\left(\pderiv{f}{x}(a+th,b+tk) h + \pderiv{f}{y}(a+th,b+tk) k\right)\D{x}{t} \\
+                                    + \pderiv{}{y}\left(\pderiv{f}{x}(a+th,b+tk) h + \pderiv{f}{y}(a+th,b+tk) k\right)\D{y}{t}
+                \end{multlined} \\
+               &\begin{multlined}[t]= \pderiv[2]{f}{x}(a+th,b+tk)h^2 + \pderiv{f}{x,y}(a+th,b+tk)kh \\
+                                    + \pderiv{f}{y,x}(a+th,b+tk)hk + \pderiv[2]{f}{y}(a+th,b+tk) k^2 
+                \end{multlined}
+    \end{split}\]
+    Therefore 
+    \begin{equation}
+        g''(0) = f_{xx}(a,b)h^2 + 2 f_{xy}(a,b) hk + f_{yy}(a,b)k^2
+        \label{eqn:quad-approx-2var!2o}
+    \end{equation}
+    Substituting \eqref{eqn:quad-approx-2var!0o}, \eqref{eqn:quad-approx-2var!1o}, and \eqref{eqn:quad-approx-2var!2o} into \eqref{eqn:quad-approx-1var} gives \eqref{eqn:quad-approx-2var}.
+\end{proof}
+
+This is getting complicated.  
+One way to alleviate the notation and get a handle on the geometry of the situation is to express this approximation in terms of vector operations.  
+For instance, the term $f_{x}(a,b)h + f_{y}(a,b)k$ is the gradient of $f$ at $(a,b)$ dotted with the vector $\Veclist{h,k}$.
+What kind of operation is the quadratic term?
+
+\begin{definition}
+A \defined{quadratic form} is a second-degree polynomial with only quadratic terms (no linear or constant terms).
+\end{definition}
+
+A quadratic form in two variables looks like
+\[
+	Q(x,y) = ax^2 + 2bxy + cy^2
+\]
+When thinking in terms of vectors instead of variables, the coefficients of $Q$ can be arranged in a $2\times 2$ matrix
+$\begin{bmatrix} a & b \\ b & c \end{bmatrix}$.  Then
+\[
+\begin{split}
+	\Veclist{x,y}\begin{bmatrix} a & b \\ b & c \end{bmatrix} \cdot \Veclist{x,y}
+	&= \Veclist{ax + by,bx + cy}\cdot\Veclist{x,y} \\
+	&= ax^2 + bxy + byx + cy^2 = Q(x,y)
+\end{split}
+\]
+
+A function of two variables gives rise to a quadratic form at each point of the domain.
+\begin{definition}
+Let $f(x,y)$ have all second partial derivatives at $(a,b)$.  
+We define the \defined{Hessian} $\Hessian{f}(\Vector{a})$ to be the matrix
+\[
+		\Hessian{f}(a,b)= \begin{bmatrix} f_{xx}(a,b) & f_{xy}(a,b) \\ f_{yx}(a,b) & f_{yy}(a,b) \end{bmatrix}.
+\]
+\end{definition}
+
+Thus we can express our quadratic approximation as
+\[
+	f(a+h,b+k) \approx
+		f(a,b) + \nabla f(a,b) \cdot \Veclist{h,k}
+			+ \tfrac12 \Veclist{h,k} \Hessian{f}(a,b)\cdot \Veclist{h,k}
+\]
+To summarize: The derivative of a function of several variables at a point is more naturally a $n$-dimensional vector $\nabla f$.  
+The second derivative of a function of several variables at a point is most naturally a quadratic form, or a $n\times n$ matrix $\Hessian{f}$.  In order to understand the geometry of the graph near a critical point, we need to know more about these quadratic forms.
+
+\subsection{Classification of Two-dimensional Quadratic Forms}
+\timecheck{\LARGE\clock{11}{30}}
+
+\Say{Let us look at some examples of quadratic forms, including their matrices, and see what the entries in the matrix can tell us about the shape of their graphs.}
+
+\Do{Prepare the board for four examples all to be seen at once} 
+
+\begin{example}
+Let
+\(
+	Q(x,y) = -x^2 - y^2
+\).
+Then 
+\(
+	\Hessian{Q} = \begin{bmatrix} -2 & 0 \\ 0 & -2 \end{bmatrix}
+\).
+The graph of $Q$ is a downward-opening circular paraboloid, and the point $(0,0)$ is the maximum point.
+\Do{draw the graph and contour plot side-by-side.}
+\end{example}
+
+\begin{example}
+Let 
+\(
+	Q(x,y) = x^2 + y^2,
+\).
+Then 
+\(
+	\Hessian{Q} = \begin{bmatrix} 2 & 0 \\ 0 & 2 \end{bmatrix}
+\).
+The graph of $Q$ is an upward-opening circular paraboloid, and the point $(0,0)$ is the minimum point.
+\Do{draw the graph and contour plot side-by-side.}
+The function $Q$ has a minimum at $(0,0)$.
+\end{example}
+
+\begin{example}
+Let 
+\(
+	Q(x,y) = x^2 - y^2,
+\)
+Then 
+\(
+	\Hessian{Q} = \begin{bmatrix} 2 & 0 \\ 0 & -2 \end{bmatrix}
+\).
+The graph of $Q$ is an hyperbolic paraboloid, and the point $(0,0)$ is the saddle point.
+\Do{draw the graph and contour plot side-by-side.}
+The function $Q$ has a saddle point at $(0,0)$.
+\end{example}
+
+\begin{example}
+Let 
+\(
+	Q(x,y) = 2xy,
+\)
+Then 
+\(
+	\Hessian{Q} = \begin{bmatrix} 0 & 2 \\ 2 & 0 \end{bmatrix}
+\).
+The graph of $Q$ is also hyperbolic paraboloid, and the point $(0,0)$ is the saddle point.
+\Do{draw the graph and contour plot side-by-side.}
+The function $Q$ has a saddle point at $(0,0)$.
+\end{example}
+
+How can we tell based on the entries of the matrix what the graph of the associated quadratic form looks like?  
+Algebra to the rescue.  (See Shifrin, Corollary 3.4)
+Suppose $a \neq 0$.
+\[
+\begin{split}
+	Q (x,y)
+	&= ax^2 + 2bxy + cy^2 \\
+	&= a\left(x^2 + \frac{2by}{a}x\right) + cy^2 \\
+	&= a\left(x^2 + \frac{2by}{a}x + \left(\frac{by}{a}\right)^2\right) + cy^2 - \frac{b^2y^2}{a} \\
+	&= a\left(x + \frac{b}{a} y\right)^2 + \left( c- \frac{b^2}{a}\right)y^2 \\
+	&= a\left(x + \frac{b}{a} y\right)^2 + \left(\frac{ac - b^2}{a}\right)y^2 \\
+\end{split}
+\]
+If both the coefficients of the squared terms are positive, the graph is an upward-opening elliptic paraboloid and $(0,0)$ is the minimum.  This happens when $a > 0$ and $ac - b^2 > 0$.
+If both the coefficients of the squared terms are negative, the graph is a downward-opening elliptic paraboloid and $(0,0)$ is the maximum.  This happens when $a < 0$ and $ac-b^2 > 0$.
+If the coefficients if the squared terms have opposite signs, the graph is a hyperbolic paraboloid and $(0,0)$ is the saddle point.
+
+Other cases? If $a=0$ and $b,c\neq 0$, we can do the same kind of complete the square operation to get
+\[
+	Q(x,y) = c \left(y + \frac{bx}{c}\right)^2 - \frac{b^2}{c} x^2
+\]
+Since $b^2>0$, the coefficients $c$ and $-\frac{b^2}{c}$ will have opposite signs, hence the graph is has a saddle point.
+
+If $a=c=0$ and $b \neq 0$, then $Q(x,y) = 2bxy$, and we saw before that the graph has a saddle point.
+
+All of these cases can be summarized by:
+
+\begin{proposition}
+Given a quadratic form 
+\[
+	Q(x,y) = ax^2 + 2bxy + cy^2 = \Veclist{x,y} \begin{bmatrix} a & b \\ b & c \end{bmatrix} \Veclist{x,y}
+\]
+\begin{itemize}
+\item If $ac-b^2 > 0$ and $a>0$, then $(0,0)$ is the minimum of $Q$.
+\item If $ac-b^2 > 0$ and $a<0$, then $(0,0)$ is the maximum of $Q$.
+\item If $ac-b^2 < 0$, then $(0,0)$ is the saddle point of $Q$.
+\end{itemize}
+\end{proposition}
+
+The expression $ac-b^2$ should be familiar to some: it is the \defined{determinant} of the matrix.
+
+\subsection{The second derivative test}
+\timecheck{\LARGE\clock{11}{45}}
+
+We are finally ready to take what we learned about quadratic forms and assemble it into the second derivative test.
+
+\begin{theorem}[The Second Derivative Test]
+Suppose the second partial derivatives of $f$ are continuous on a disk with center $(a,b)$
+and that $(a,b)$ is a critical point of $f$.
+Let
+\[
+	D = \pderiv[2]{f}{x}(a,b)\pderiv[2]{f}{y}(a,b) - \left(\pderiv{f}{x,y}(a,b)\right)^2
+\]
+\begin{enumerate}
+\item If $D>0$ and $\frac{\partial^2 f}{\partial x^2}(a,b) > 0$, then $f(a,b)$ is a local minimum value.
+\item If $D>0$ and $\frac{\partial^2 f}{\partial x^2}(a,b) < 0$, then  $f(a,b)$ is a local maximum value.
+\item If $D< 0$, then $f(a,b)$ is neither a local maximum nor a local minimum.  The graph of $f$ has a saddle point at $(a,b)$.
+\end{enumerate}
+\end{theorem}
+
+\section{Examples}
+
+\begin{example}
+Return to Example~\ref{example:1}.  
+Let $f(x,y) = 6x^2 - 2x^3 + 3y^2 + 6xy$.
+Classify the critical points.
+\begin{solution}
+\begin{align*}
+	\frac{\partial f}{\partial x}(x,y)
+		&= 12x - 6x^2 + 6y  \\
+	\frac{\partial f}{\partial x}(x,y)
+		&= 6y+6x  \\
+\end{align*}
+The critical points are $(0,0)$ and $(1,-1)$.
+\begin{align*}
+	\frac{\partial^2 f}{\partial x^2}(x,y) 
+		&= 12 - 12x  \\
+	\frac{\partial^2 f}{\partial y \partial x}(x,y) 
+		&= 6 \\
+	\frac{\partial^2 f}{\partial x \partial y}(x,y) 
+		&=  6 \\
+	\frac{\partial^2 f}{\partial y^2}(x,y) 
+		&=  6 \\		
+\end{align*}
+We have
+\[
+	\Hessian{f}(0,0)
+		=\begin{bmatrix} 12 & 6 \\ 6 & 6 \end{bmatrix}.
+\]
+The determinant is positive and the top-left is positive.
+So the graph has a minimum at this point.
+On the other hand,
+\[
+	\Hessian{f}(1,-1)		=\begin{bmatrix} 0 & 6 \\ 6 & 6 \end{bmatrix}.
+\]
+The determinant is negative, so the graph has a saddle point.
+
+\begin{center}
+\includegraphics[width=0.8\textwidth]{2005-10-31-Example_1.eps}
+\end{center}
+\end{solution}
+\end{example}
+
+\begin{practice}% E&P, Example 12.5.3
+Classify the critical points of the function
+\[
+	f(x,y) = \frac{3}{4}y^2 + \frac{1}{24}y^3 - \frac{1}{32}y^4 -x^2
+\]
+\begin{solution}
+We have
+\begin{align*}
+	\pderiv{f}{x} &= -2x  \\
+	\pderiv{f}{y} &= \frac{3}{2}y + \frac{1}{8} y^2 - \frac{1}{8} y^3 \\
+	&= -\frac{1}{8}y(y^2-y-12) = -\frac{1}{8}y(y+3)(y-4)
+\end{align*}
+There are three critical points: $(0,0)$, $(0,-3)$, $(0,4)$.
+Now
+\begin{align*}
+	\pderiv[2]{f}{x} &= -2 & \pderiv{f}{y,x} &= 0 \\
+	\pderiv{f}{x,y} &=0    & \pderiv[2]{f}{y} &= \frac{3}{2} + \frac{1}{4} y - \frac{3}{8} y^2 \\
+\end{align*}
+The Hessians at each critical point are
+\begin{align*}
+	\Hessian{f}(0,0) &= \begin{pmatrix} -2 & 0 \\ 0 & \frac{3}{2} \end{pmatrix} \\
+	\Hessian{f}(0,-3) &= \begin{pmatrix} -2 & 0 \\ 0 & -\frac{21}{8} \end{pmatrix} \\
+	\Hessian{f}(0,4) &= \begin{pmatrix} -2 & 0 \\ 0 & -\frac{7}{2} \end{pmatrix} \\
+\end{align*}
+So $(0,0)$ is a saddle point and the other two points are local maxima.
+\end{solution}
+\end{practice}
+
+\begin{practice}% E&P Exercise 12.5.19
+Classify the critical points of the function
+\[
+f(x,y) = 2x^2 + 8xy + y^4
+\]
+\begin{solution}
+We have
+\begin{align*}
+	\pderiv{f}{x} &= 4x + 8y \\
+	\pderiv{f}{y} &= 8y + 4y^3
+\end{align*}
+The critical points are $(0,0)$, $(4,-2)$, and $(-4,2)$.
+Now
+\begin{align*}
+	\pderiv[2]{f}{x} &= 4 & \pderiv{f}{y,x} &= 8 \\
+	\pderiv{f}{x,y} &=8    & \pderiv[2]{f}{y} &= 8 + 12y^2 \\
+\end{align*}
+So the Hessians at each critical point are 
+\begin{align*}
+	\Hessian{f}(0,0) &= \begin{pmatrix} 4 & 8 \\ 8 & 8 \end{pmatrix} \\
+	\Hessian{f}(4,-2) &= \begin{pmatrix} 4 & 8 \\ 8 & 56 \end{pmatrix} \\
+	\Hessian{f}(-2,4) &= \begin{pmatrix} 4 & 8 \\ 8 & 200 \end{pmatrix} \\
+\end{align*}
+So $(0,0)$ is a saddle point and the other two points are local minima.
+\end{solution}
+\end{practice}
+
+\mode<article>{%
+\section*{Guided Practice}}
+
+\Do{Worksheet}
+
+\mode<article>{%
+\section*{Closure}}
+\timecheck{\LARGE\clock{9}{50}}
+
+The second derivative test for functions of two variables involves a complicated condition on the three derivatives.
+For functions of three variables it is even more complicated.  The Hessian matrix is $3\times 3$, and the types of hyper surfaces that can happen at each critical point are more manifold.  There are two saddle-type surfaces.  If all the diagonal sub-minors have positive determinants, we know the critical point is a local minimum, but that's it.
+
+\begin{frame}{Summary}
+\begin{itemize}
+\item critical points
+\item second derivative test
+\end{itemize}
+\end{frame}
+
+
+
+\mode<article>{%
+\section*{Independent Practice}
+
+\subsection*{Homework problems}
+
+\begin{itemize}
+\item WebAssign
+\end{itemize}
+
+}% end mode<article>
+
+
+\bibliographystyle{amsalpha}
+\bibliography{undergrad-textbooks}
+
+
+\end{document}
+%</lesson>
+%<*worksheet>
+\usetikzlibrary{MATH-UA-123}
+\usepackage{leincalc}
+
+\newcommand{\va}{\Vector{a}}
+\newcommand{\vb}{\Vector{b}}
+\newcommand{\vc}{\Vector{c}}
+\newcommand{\vr}{\Vector{r}}
+\newcommand{\vtau}{\Vector{\pmb{\tau}}}
+\newcommand{\vzero}{\Vector{\pmb{0}}}
+
+% Fix links with images in them.
+% See http://tex.stackexchange.com/questions/31819/xelatex-includegraphics-and-hyperlink
+% and http://www.tug.org/pipermail/xetex/2005-October/002480.html
+\newsavebox{\ximagebox}
+\newlength{\ximageheight}
+\newsavebox{\xglyphbox}
+\newlength{\xglyphheight}
+\newcommand{\xbox}[1]%
+  {\savebox{\ximagebox}{#1}%
+  \settoheight{\ximageheight}{\usebox{\ximagebox}}%
+  \savebox{\xglyphbox}{\char32}%
+  \settoheight{\xglyphheight}{\usebox{\xglyphbox}}%
+  \raisebox{\ximageheight}[0pt][0pt]{\raisebox{-\xglyphheight}[0pt][0pt]{%
+    \makebox[0pt][l]{\usebox{\xglyphbox}}}}%
+    \usebox{\ximagebox}%
+    \raisebox{0pt}[0pt][0pt]{\makebox[0pt][r]{\usebox{\xglyphbox}}}}
+\newcommand{\walphalink}[1]{\marginpar{\href{#1}{\xbox{\includegraphics{wolfram_alpha_icon.png}}}}}
+
+
+\newcommand{\newVector}[2]{
+	\newcommand{#1}{\Vector{#2}}
+}
+\newVector{\vF}{F}
+
+\usepackage{hyperref}
+%<solutions>\let\Vfill\relax
+%<!solutions>\let\Vfill\vfill
+%<solutions>\let\Clearpage\relax
+%<!solutions>\let\Clearpage\clearpage
+\usepackage{datatool}
+\DTLloaddb{announcements}{../announcements.csv}
+\dtlsort{endDate}{announcements}{\dtlcompare}
+\begin{document}
+\maketitle
+
+
+
+\begin{problems}
+\item Find the critical points of the function
+\[
+	f(x,y) = \frac{3}{4}y^2 + \frac{1}{24}y^3 - \frac{1}{32}y^4 -x^2
+\]
+\begin{solution}
+We have
+\begin{align*}
+	\pderiv{f}{x} &= -2x  \\
+	\pderiv{f}{y} &= \frac{3}{2}y + \frac{1}{8} y^2 - \frac{1}{8} y^3 \\
+	&= -\frac{1}{8}y(y^2-y-12) = -\frac{1}{8}y(y+3)(y-4)
+\end{align*}
+Setting $\pderiv{f}{x}=0$ and $\pderiv{f}{y} = 0$ gives $x=0$, and $y=0$, $-3$, or $4$.
+So there are three critical points: $(0,0)$, $(0,-3)$, $(0,4)$.
+\end{solution}
+%<!solutions>\vfill
+\item Find the critical points of the function
+\[
+f(x,y) = 2x^2 + 8xy + y^4
+\]
+\begin{solution}
+We have $\pderiv{f}{x} = 4x + 8y$ and $\pderiv{f}{y} = 8y + 4y^3$, so we must solve the system
+\begin{align}
+	4x + 8y &=0 \label{2a}\\
+	8x + 4y^3&=0 \label{2b}
+\end{align}
+Isolating $x$ in \eqref{2a} gives $x=-2y$.  Substituting this into \eqref{2b} gives 
+\[
+- 16 y + 4y^3 = 0 \implies 4y(y-2)(y+2) = 0
+\]
+So $y=0$ or $y= \pm 2$.  Since $x=-2y$ we have three critical points: $(0,0)$, $(4,-2)$, and $(-4,2)$.
+\end{solution}
+
+%<!solutions>\vfill\clearpage
+\item Classify the critical points of the function in Problem~1.
+\begin{solution}
+We have
+\begin{align*}
+	\pderiv{f}{x} &= -2x  \\
+	\pderiv{f}{y} &= \frac{3}{2}y + \frac{1}{8} y^2 - \frac{1}{8} y^3 \\
+	&= -\frac{1}{8}y(y^2-y-12) = -\frac{1}{8}y(y+3)(y-4)
+\end{align*}
+There are three critical points: $(0,0)$, $(0,-3)$, $(0,4)$.
+Now
+\begin{align*}
+	\pderiv[2]{f}{x} &= -2 & \pderiv{f}{y,x} &= 0 \\
+	\pderiv{f}{x,y} &=0    & \pderiv[2]{f}{y} &= \frac{3}{2} + \frac{1}{4} y - \frac{3}{8} y^2 \\
+\end{align*}
+The Hessians at each critical point are
+\begin{align*}
+	\Hessian{f}(0,0) &= \begin{pmatrix} -2 & 0 \\ 0 & \frac{3}{2} \end{pmatrix} \\
+	\Hessian{f}(0,-3) &= \begin{pmatrix} -2 & 0 \\ 0 & -\frac{21}{8} \end{pmatrix} \\
+	\Hessian{f}(0,4) &= \begin{pmatrix} -2 & 0 \\ 0 & -\frac{7}{2} \end{pmatrix} \\
+\end{align*}
+So $(0,0)$ is a saddle point and the other two points are local maxima.
+Here is a contour plot showing the critical points:
+\begin{center}
+\includegraphics{ws3}
+\end{center}
+\end{solution}
+
+%<!solutions>\vfill
+\item Classify the critical points of the function in Problem~2.
+\begin{solution}
+Referring back to Problem~2, we have
+\begin{align*}
+	\pderiv[2]{f}{x} &= 4 & \pderiv{f}{y,x} &= 8 \\
+	\pderiv{f}{x,y} &=8    & \pderiv[2]{f}{y} &= 12y^2 \\
+\end{align*}
+So the Hessians at each critical point are 
+\begin{align*}
+	\Hessian{f}(0,0) &= \begin{pmatrix} 4 & 8 \\ 8 & 0 \end{pmatrix} \\
+	\Hessian{f}(4,-2) &= \begin{pmatrix} 4 & 8 \\ 8 & 48 \end{pmatrix} \\
+	\Hessian{f}(-2,4) &= \begin{pmatrix} 4 & 8 \\ 8 & 48 \end{pmatrix} \\
+\end{align*}
+At $(0,0)$, the determinant of the Hessian is negative, so that critical point is a saddle point.
+At the other two critical points, the determinant is positive and the top-left entry is positive, so they are local minima.
+Here is a contour plot showing the critical points:
+\begin{center}
+\includegraphics{ws4}
+\end{center}
+\end{solution}
+\end{problems}
+
+
+%<!solutions>\vfill
+
+\end{document}
+%</worksheet>

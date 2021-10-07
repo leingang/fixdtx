@@ -1,0 +1,802 @@
+%<*dtx>
+%%!TEX TS-program = dtxmake
+%</dtx>
+%<*driver>
+\input docstrip.tex
+\declarepreamble\xelatexmkpreamble
+\space
+!TEX TS-program = xelatexmk
+\endpreamble
+\askforoverwritefalse
+\generate{
+    \file{\jobname.ws.tex}{\from{\jobname.dtx}{worksheet}}
+    \file{\jobname.ws-sol.tex}{\from{\jobname.dtx}{worksheet,solutions}}
+    \usepreamble\xelatexmkpreamble
+    \file{\jobname.slides.tex}{\from{\jobname.dtx}{slides,lesson}}
+    \file{\jobname.handout.tex}{\from{\jobname.dtx}{handout,lesson}}    
+    \file{\jobname.lp.tex}{\from{\jobname.dtx}{lesson,plan}}
+}
+\endbatchfile
+%</driver>
+\documentclass
+%<slides|handout>[ignorenonframetext,aspectratio=169]
+%<slides>{ngelessonslides}
+%<handout>{ngelessonhandout}
+%<plan>{ngelessonplan}
+%<worksheet&solutions>[solutions]
+%<worksheet>{ngelessonworksheet}
+\title[
+%	short title=,
+	lesson number=15,
+	textbook section=11.6
+	]{Directional Derivatives and the Gradient Vector Field}
+\input{../course.def}
+%<*plan>
+\author{Prof. Matthew Leingang\thanks{This monograph comprises lecture notes and is for the sole use of the author and his students. Some material (e.g. images, problem statements) is borrowed, but limited in scope and for educational purposes only.  We believe this constitutes a Fair Use.  The original material in this document is copyright of the author. This document may not be shared or republished without the written consent of the author. In short: All rights not reserved by somebody else are reserved by me.}}
+%</plan>
+\usepackage[us]{datetime}
+\newdate{lessondate}{14}{10}{2021}
+\edef\lessondateiso{\getdateyear{lessondate}-\twodigit{\getdatemonth{lessondate}}-\twodigit{\getdateday{lessondate}}}
+\date{\displaydate{lessondate}}
+\makeatletter
+\keyword{course: \ngelesson@course@code\space\insertcoursename}
+\keyword{term: \ngelesson@term}
+\keyword{STEC\ngelesson@textbooksection}% must fix if chap > 9
+\keyword{\insertcoursename}
+\makeatother
+\keywords{}
+\lessondescription{}% Oliver's description
+%\input config.def
+\usepackage{siunitx}
+\usepackage{overpic}
+\usepackage{snapshot}
+\usepackage{textcomp}
+\usepackage{etoolbox}
+%<*lesson>
+\usetheme[Hoefler]{Gotham}
+
+
+\logo{\includegraphics{courant_short_black}}
+\setbeamertemplate{title page logo}[south west]
+
+\usepackage{../stock}
+\setbeamertemplate{worksheet image}[construction]
+
+
+%<*plan>
+\usepackage[no-math]{fontspec}
+\usepackage{xltxtra}
+\defaultfontfeatures{Mapping=tex-text}
+\setmainfont{Cambria}
+%\setmathrm{Cambria Math}
+\setsansfont{Calibri}
+\usepackage{xcolor-nyu}
+\usepackage{../beamerbootstraplocalstructure}
+%</plan>
+
+\usepackage{leincalc}
+\renewcommand{\jhat}{\Vector{\hat j}}
+\usetikzlibrary{MATH-UA-123}
+% Three decimal places unless smaller than 10^3, 
+% then three sig figs
+\sisetup{round-mode=places,round-precision=3}
+% [round-mode=figures]
+
+\newcommand{\newVector}[2]{
+    \newcommand{#1}{\Vector{#2}}
+}
+\newVector{\va}{a}
+\newVector{\vb}{b}
+\newVector{\vc}{c}
+\newVector{\vF}{F}
+\newVector{\vr}{r}
+\newVector{\vv}{v}
+\newVector{\vT}{T}
+\newVector{\vn}{n}
+\newVector{\vu}{u}
+\newcommand{\vtau}{\Vector{\pmb\tau}}
+\newcommand{\vzero}{\Vector{\pmb0}}
+\newcommand{\dr}{d\vr}
+\newcommand{\dS}{d\Vector{S}}
+
+\usepackage{hyperref}
+\makeatletter
+\hypersetup{colorlinks=true,
+citecolor=tertiary,
+filecolor=primary,
+urlcolor=primary,
+pdftitle=\ngelesson@longtitle,
+pdfauthor=\insertauthor,
+pdfsubject=\insertcoursename,
+pdfkeywords=\the\ngelesson@keywords,
+}
+\makeatother
+
+\usepackage{datatool}
+\DTLloaddb{announcements}{../announcements.csv}
+
+
+\begin{document}
+
+\frame{\maketitle}
+
+\section<article>*{Announcements}
+\timecheck{\LARGE\clock{10}{15}}
+
+\begin{frame}
+\frametitle<presentation>{Announcements}
+\begin{itemize}
+\DTLforeach[\DTLisgt{\endDate}{\lessondateiso}\and\not\DTLisgt{\startDate}{\lessondateiso}]{announcements}{\annText=announcementText,\endDate=endDate,\startDate=startDate}{\item \annText}
+    \item All deadlines on Brightspace
+\end{itemize}
+\end{frame}
+
+\begin{frame}<article:0|handout:0>{Record and Unmute}
+\begin{columns}
+\begin{column}{0.45\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{record_pixelmeetup}
+\end{column}
+\begin{column}{0.45\textwidth}
+    \centering
+    \copyrightbox{\includegraphics[width=\textwidth]{microphone_pixelmeetup}}
+    {\color{nyugray3}\href{https://www.flaticon.com/authors/pixelmeetup}{\color{nyugray3}Pixelmeetup}
+     via \href{https://www.flaticon.com/}{\color{nyugray3}Flaticon}}
+\end{column}
+\end{columns}
+\end{frame}
+
+
+\mode<article>{%
+\section*{Objectives}
+}% end mode<article>
+
+\begin{frame}
+\frametitle<presentation>{Objectives}
+\usebeamertemplate{objectives begin}
+\begin{itemize}
+\item Write down the gradient vector field of a function.
+\item Plot the gradient vector field of a function.
+\item Use the gradient vector field of a function to find its areas of great change and stationary
+\end{itemize}
+\usebeamertemplate{objectives end}
+\end{frame}
+
+
+
+\subsection<article>*{Notes}
+
+
+
+\makeatletter
+See also \cite[Section \ngelesson@textbooksection]{Stewart-EC}.
+\makeatother
+
+\subsubsection{Fall 2013}
+
+
+See \href{}{notes in Evernote \includegraphics{Icon_External_Link.pdf}}.
+
+%See \href{evernote:///view/210343/s2/5dd6faa6-7dbe-473f-af6a-6b6ad63de98b/5dd6faa6-7dbe-473f-af6a-6b6ad63de98b/}{notes in Evernote \includegraphics{Icon_External_Link.pdf}}.
+
+\subsubsection{Spring 2016}
+
+Added a Do Now.  
+Even if the day starts with a quiz it might be a good one because it segues into the idea of gradient.
+The same question is repeated at the end to reinforce.
+
+I also filled in some details.
+
+\section*{Materials}
+
+\begin{itemize}
+\item colored chalk/markers
+\end{itemize}
+
+
+\mode<article>{
+\section*{Do Now}}
+
+\setcounter{practice}{-1}
+\begin{practice}
+% Rogawski 14.5.38
+Consider the surface with equation $x^2 + y^2 - z^2 = 6$ (a hyperboloid of one sheet).
+Find an equation for the tangent plane and normal vector to the surface at $(3,1,2)$.
+\end{practice}
+\begin{solution}
+    Let $F(x,y,z) = x^2 + y^2 -z^2$.
+    Then along the surface $F(x,y,z) = 1$, the chain rule says 
+    \begin{align*}
+        \pderiv{z}{x} &= - \frac{\pderiv{F}{x}}{\pderiv{F}{z}} = - \frac{2x}{-2z} = \frac{x}{z} 
+        &\implies \pderiv{z}{x}(3,1,2) &= \frac{3}{2}\\
+        \pderiv{z}{y} &= - \frac{\pderiv{F}{y}}{\pderiv{F}{z}} = - \frac{2y}{-2z} = \frac{y}{z}
+        &\implies \pderiv{z}{y}(3,1,2) &= \frac{1}{2}\\
+    \end{align*}
+    So the plane has equation
+    \[
+        \frac{3}{2}(x-3) + \frac{1}{2}(y-1) - (z-2) = 0
+    \]
+    A vector normal to this plane is
+    \(
+       \Veclist{\frac{3}{2},\frac{1}{2},-1}
+    \).
+\end{solution} 
+Another vector normal to the tangent plane is
+\(
+    \Veclist{3,1,-2}
+\)
+
+\mode<article>{%
+\section*{Anticipatory Set}}
+\timecheck{\LARGE\clock{9}{10}}
+
+Recall the definitions of the partial derivatives of a function $f(x,y)$ at a point $x_0,y_0$:
+\begin{align*}
+	\pderiv{f}{x}(x_0,y_0) &= \lim_{\Delta x \to 0} \frac{f(x_0 + \Delta x,y_0) - f(x_0,y_0)}{\Delta x} \\
+	\pderiv{f}{y}(x_0,y_0) &= \lim_{\Delta y \to 0} \frac{f(x_0,y_0 + \Delta y) - f(x_0,y_0)}{\Delta y} \\
+\end{align*}
+
+These are the derivatives along the lines $y=y_0$ and $x=x_0$ through $(x_0,y_0)$.
+Why should we only go in those two directions?
+
+\tableofcontents
+
+
+\mode<article>{%
+\section*{Procedure}}
+
+\section{The directional derivative}
+
+\begin{definition}
+Let $f$ be a function of two variables, $(x_0,y_0)$ a point in the domain of $f$,
+and $\Vector{u} = \Veclist{a,b}$ a unit vector.  
+The \defined{directional derivative} of $f$ in the direction of $\Vector{u}$ is the limit
+\[
+	D_{\Vector{u}} f (x_0,y_0) = \lim_{t\to 0} \frac{f(x_0 + ta,y_0+tb)-f(x_0,y_0)}{t}
+\]
+(if it exists).
+\end{definition}
+
+Remarks:
+\begin{itemize}
+\item Why must we take a unit vector?  Because we want $D_{\Vector{u}} f$ to depend only on $f$ and not the length of $\Vector{u}$. It's a \emph{directional} derivative, not a vector derivative.
+\item Notice that $D_{\ihat} f = \pderiv{f}{x}$ and $D_{\jhat} f = \pderiv{f}{y}$.
+\end{itemize}
+
+This looks pretty terrible, but the Chain Rule helps us out.
+
+\begin{theorem}
+If $f$ is a differentiable function of $x$ and $y$, then $f$ has a direction derivative in the direction of any unit vector $\Vector{u} = \Veclist{a,b}$ and
+\[
+	D_{\Vector{u}} f (x_0,y_0) = \pderiv{f}{x}(x_0,y_0) a + \pderiv{f}{y}(x_0,y_0)b
+\]
+for any point $(x_0,y_0)$ in the domain of $f$.
+\end{theorem}
+\begin{proof}
+If we define a function $g(h)$ by
+\[
+	g(t) = f(x_0 + ta,y_0 + tb)
+\]
+Then 
+\[
+\begin{split}
+	g'(0) &= \lim_{t\to 0} \frac{g(t) - g(0)}{h} 
+\\		&= \lim_{t\to 0} \frac{f(x_0 + ta,y_0+tb)-f(x_0,y_0)}{t}
+\\		& = D_{\Vector{u}} f (x_0,y_0)
+\end{split}
+\]
+On the other hand, by the chain rule, $g(h) = f(x(h),y(h))$, so 
+\[
+	g'(0) = \left.\D{g}{t}\right|_{h=0} 
+		= \left[\pderiv{f}{x}\D{x}{t} + \pderiv{f}{y}\D{y}{t}\right]_{h=0} = \pderiv{f}{x}(x_0,y_0) a + \pderiv{f}{y}(x_0,y_0)b
+\]
+\end{proof}
+
+\begin{example}% Rogawski 14.5.21
+Find the directional derivative of $f(x,y) = x^2 + y^3$ in the direction $\Veclist{\frac{3}{5},\frac{4}{5}}$ at the point $(1,2)$.
+\end{example}
+\begin{solution}
+We have $\pderiv{f}{x} = 2x$, and $\pderiv{f}{y} = 3y^2$.  So
+\begin{equation*}
+\begin{split}
+	D_{\left<3/5,4/5\right>} f (1,2)
+	&= 2(1) \cdot \frac{3}{5} + 3(2)^2 \frac{4}{5} \\
+	&= \frac{6}{5} + \frac{48}{5} = \frac{54}{5}
+\end{split}
+\end{equation*}
+\end{solution}
+
+Of course, we can do it in 3D as well, \emph{mutatis mutandis}.
+The directional derivative of $F(x,y,z)$ at $(x_0,y_0,z_0)$ in the direction of the unit vector $\Vector{u}=\Veclist{a,b,c}$ is defined to be
+\[
+    D_{\Vector{u}}F(x_0,y_0,z_0)
+    = \lim_{t\to 0} \frac{F(x_0+ta,y_0+tb,z_0+tc)-F(x_0,y_0,z_0)}{t}
+\]
+We can prove a similar result to above:
+\[
+    D_{\Veclist{a,b,c}}F(x_0,y_0,z_0)
+    = \pderiv{F}{x}(x_0,y_0,z_0)a 
+     +\pderiv{F}{y}(x_0,y_0,z_0)b
+     +\pderiv{F}{z}(x_0,y_0,z_0)c 
+\]
+
+\begin{practice}% Rogawski 14.5.29
+\Do{worksheet \#1}
+Find the directional derivative of $f(x,y,z) = xe^{-yz}$ in the direction $\Veclist{\frac{1}{\sqrt{3}},\frac{1}{\sqrt{3}},\frac{1}{\sqrt{3}}}$ at the point $(1,2,0)$.
+\end{practice}
+\begin{solution}
+We have
+\begin{align*}
+	D_{\Vector{u}}f(1,2,0) 
+	&= \left.\D{}{t}f\left(1 + \frac{1}{\sqrt{3}} t, 2 + \frac{1}{\sqrt{3}} t, 0 + \frac{1}{\sqrt{3}} t\right)\right|_{t=0} \\
+	&= \left.\D{}{t}\left(1 + \frac{1}{\sqrt{3}} t\right) e^{-\left(2 + \frac{1}{\sqrt{3}} t\right)\left(0 + \frac{1}{\sqrt{3}} t\right)}\right|_{t=0} \\
+	&= \left[
+		\frac{1}{\sqrt{3}}  e^{-\frac{2}{\sqrt{3}}t - \frac{1}{3}t^2}
+		+ \left(1 + \frac{1}{\sqrt{3}} t\right) e^{-\frac{2}{\sqrt{3}}t - \frac{1}{3}t^2}\left(-\frac{2}{\sqrt{3}} - \frac{2}{3}t\right) 
+	\right]_{t=0} \\
+	&= \frac{1}{\sqrt{3}} - \frac{2}{\sqrt{3}} = - \frac{1}{\sqrt{3}}
+\end{align*}
+\end{solution}
+
+
+
+\section{The gradient}
+
+From the theorem, we see that the partial derivatives carry all the directional derivatives within them.  So we create a “variable vector” and use it to express directional derivatives.
+
+\begin{definition}
+If $f$ is a function of two variables $x$ and $y$, then the \defined{gradient} of $f$ is the vector function $\Grad{f}$ defined by 
+\begin{align*}
+	\Grad{f}(x,y) &= \Veclist{\pderiv{f}{x}(x,y),\pderiv{f}{y}(x,y)} 
+	= \pderiv{f}{x}\ihat + \pderiv{f}{y}\jhat\\
+\end{align*}
+If $F$ is a function of three variables $x$, $y$, and $z$,
+\[
+    \Grad{F}(x,y,z) 
+    = \Veclist{\pderiv{F}{x}(x,y,z),\pderiv{F}{y}(x,y,z),\pderiv{F}{z}(x,y,z)}
+    = \pderiv{F}{x}\ihat + \pderiv{F}{y}\jhat + \pderiv{F}{z} \khat
+\]
+\end{definition}
+
+Remark: $\Grad{f}(x,y)$ is a vector attached to the point $(x,y)$.  We will later call this a \emph{vector field}.
+
+\begin{theorem}
+If $f$ is differentiable at $(x_0,y_0)$, and $\Vector{u}$ is a unit vector, then
+\[
+	D_{\Vector{u}}f(x_0,y_0) = \Grad{f}(x_0,y_0) \cdot \Vector{u}
+\]
+\end{theorem}
+\begin{proof}
+Clear.
+\end{proof}
+
+\begin{example}
+Use the gradient to find the directional derivative of $f(x,y) = x^2 + y^3$ in the direction $\Veclist{\frac{3}{5},\frac{4}{5}}$ at the point $(1,2)$.
+\end{example}
+\begin{solution}
+We have
+\[
+	\Grad{f}{(x,y)} = \Veclist{2x,3y^2} \implies \Grad{f}(1,2) =\Veclist{2,12}
+\]
+So 
+\[
+	D_{\Veclist{3/5,4/5}} f(1,2) = \Veclist{2,12}\cdot\Veclist{\frac{3}{5},\frac{4}{5}} = \frac{54}{5}
+\]
+\end{solution}
+
+\begin{example}% Rogawski 14.5.27
+Let $f(x,y) = \ln(x^2 + y^2)$.
+Find the directional derivative of $f$ at $(1,0)$ in the direction of $\Veclist{3,-2}$.
+
+$\Vector{u} = \Veclist{\frac{3}{\sqrt{11}},-\frac{2}{\sqrt{11}}}$.  Find $D_{\Vector{u}}f(1,0)$.
+\end{example}
+\begin{solution}
+We need a unit vector $\Vector{u}$ pointing in the same direction as $\Vector{v}$.
+So we just divide by its length:  $\Vector{u} = \frac{1}{\Norm{\Vector{v}}}\Vector{v}$.
+Then
+\[
+	\Grad{f}(x,y) = \Veclist{\frac{2x}{x^2 + y^2},\frac{2y}{x^2 + y^2}}
+	\implies \Grad{f}(1,0) = \Veclist{1,0}
+\]
+So 
+\[
+D_{\Vector{u}}f(1,0) = \Grad{f}(1,0) \cdot \Vector{u} = \Grad{f}(1,0) \cdot \frac{\Vector{v}}{\Norm{\Vector{v}}}
+= \Veclist{1,0} \cdot \frac{\Veclist{3,-2}}{\sqrt{11}} = \frac{3}{\sqrt{11}}
+\]
+\end{solution}%%
+
+\begin{practice}
+\Do{Worksheet \#2}
+Let $f(x,y,z) = x \ln(y+z)$, and $\Vector{u}$ be the unit vector in the direction 
+of $\Vector{v} = 2\Vector{i} - \Vector{j} + \Vector{k}$.
+Use the gradient to find $D_{\Vector{u}}f(2,e,e)$
+\end{practice}
+\begin{solution}
+We have
+\[
+\Grad{f}(x,y,z) = \Veclist{\Log{(y+z)},\frac{x}{y+z},\frac{y}{y+z}}
+\]so
+\[
+\Grad{f}(2,e,e)= \Veclist{\Log{2e},\frac{1}{e},\frac{1}{e}} =  \Veclist{\Log{2} + 1,\frac{1}{e},\frac{1}{e}}
+\]
+Now $\Vector{u} = \frac{1}{\Norm{\Vector{v}}} \Vector{v}$, so
+\[
+D_{\Vector{u}}f(2,e,e) = \frac{\Veclist{\Log{2} + 1,\frac{1}{e},\frac{1}{e}} \cdot \Veclist{2,-1,1}}{\sqrt{2^2 + (-1)^2 + 1^2}}
+= \frac{2 \Log{2} + 2}{\sqrt{6}}
+\]
+\end{solution}
+
+
+\subsection{Properties of the gradient}
+
+\begin{theorem}
+Let $f$ and $g$ be differentiable functions of two variables $x$ and $y$, and $c$ a constant.
+\begin{itemize}
+\item $\Grad{(f+g)} = \Grad{f} + \Grad{g}$
+\item $\Grad{(f-g)} = \Grad{f} - \Grad{g}$
+\item $\Grad{(cf)} = c\Grad{f}$
+\item $\Grad{(fg)} = f \Grad{g} + g \Grad{f}$
+\item $\Grad{\left(\frac{f}{g}\right)} = \frac{1}{g^2}\left(g \Grad{f} - f \Grad{g}\right)$
+\item If $\Vector{r}(t)$ is a vector function, then
+\[
+	\frac{d}{dt}f(\Vector{r}(t)) = \Grad{f}(\Vector{r}(t)) \cdot \Vector{r}'(t)
+\]
+\end{itemize}
+\end{theorem}
+\begin{proof}
+Just do it!
+\end{proof}
+
+\Do{Worksheet \#3}
+
+
+\begin{theorem}
+Suppose $f$ is a differentiable function of two variables.
+The maximum value of $D_{\Vector{u}}f(x,y)$ is $\Norm{\Grad{f}(x,y)}$ and it occurs when $\Vector{u}$ has the same direction as $\Grad{f}(x,y)$.
+\end{theorem}
+
+This means that if the graph of $f$ is a surface, $\Grad{f}$ always points “uphill.”
+\begin{center}
+\includegraphics[width=\linewidth]{gvf}
+\end{center}
+
+\begin{proof}
+Law of cosines.  
+Let $\theta$ be the angle between $\Vector{u}$ and $\Grad{f}(x,y)$.  Then
+\[
+	D_{\Vector{u}}f(x,y)
+	= \Grad{f}(x,y)\cdot \Vector{u}
+	= \Norm{\Grad{f}(x,y)}\Norm{\Vector{u}}\Cos{\theta}
+	= \Norm{\Grad{f}(x,y)}\Cos{\theta}
+\]
+This is maximized when $\Cos{\theta} = 1$; i.e., when $\Grad{f}(x,y)$ and $\Vector{u}$ are pointing in the same direction.
+\end{proof}
+
+\begin{fact}
+Let $f(x,y)$ be a function of two variables, and $(x_0,y_0)$ a point at which $\Grad{f}(x_0,y_0) \neq \Vector{0}$.
+The gradient vector field $\Grad{f}(x,y)$ is normal to the level curve $f(x,y) = k$ at $(x_0,y_0)$.
+\end{fact}
+
+\begin{proof}
+As we showed before, the derivative $\D{y}{x}$ along the curve $f=k$ is given by 
+\[
+	\D{y}{x} = -\frac{\pderiv{f}{x}}{\pderiv{f}{y}}
+\]
+This is valid as long as $\pderiv{f}{y}(x_0,y_0) \neq 0$; if it is, use $\D{x}{y}$ instead.
+So the vector $\Veclist{-\pderiv{f}{y}(x_0,y_0),\pderiv{f}{x}(x_0,y_0)}$ is in the direction of the tangent line to the curve at $(x_0,y_0)$.  
+This vector is orthogonal to $\Grad{f}(x_0,y_0)$, by definition.
+\end{proof}
+
+
+\begin{fact}
+Let $F(x,y,z)$ be a function of three variables, and $(x_0,y_0,z_0)$ a point at which $\Grad{F}(x_0,y_0,z_0) \neq \Vector{0}$.
+Then $\Grad{F}(x_0,y_0,z_0)$ is normal to the level surface $F(x,y,z) = F(x_0,y_0,z_0)$ at $(x_0,y_0,z_0)$.
+\end{fact}
+
+\begin{center}
+\includegraphics[width=\linewidth]{Surface_normal}
+\\
+"Surface normal" by Oleg Alexandrov at en.wikipedia 
+Public domain via Wikimedia Commons - \url{http://commons.wikimedia.org/wiki/File:Surface_normal.png#mediaviewer/File:Surface_normal.png}
+\end{center}
+
+\begin{proof}
+Assume $\pderiv{F}{z}(x_0,y_0) \neq 0$ (one of them must be nonzero).
+If we use the equation $F(x,y,z) = k$ to define $z$ implicitly as a function of $x$ and $y$, and apply the chain rule, we have
+\begin{align*}
+	\pderiv{F}{x} + \pderiv{F}{z}\pderiv{z}{x} = 0
+	&\implies \pderiv{z}{x} = - \frac{\pderiv{F}{x}}{\pderiv{F}{z}} \\
+	\pderiv{F}{y} + \pderiv{F}{z}\pderiv{z}{y} = 0
+	&\implies \pderiv{z}{y} = - \frac{\pderiv{F}{y}}{\pderiv{F}{z}} \\
+\end{align*}
+So the tangent plane to $F(x,y,z)=k$ has equation
+\begin{align*}
+	\pderiv{z}{x}(x_0,y_0,z_0)(x-x_0) + \pderiv{z}{y}(x_0,y_0,z_0)(y-y_0) - (z - z_0) &= 0 \\
+	- \frac{\pderiv{F}{x}}{\pderiv{F}{z}}(x_0,y_0,z_0)(x-x_0) - \frac{\pderiv{F}{y}}{\pderiv{F}{z}}(x_0,y_0,z_0)(y-y_0) - (z - z_0) &= 0 \\
+	\pderiv{F}{x}(x_0,y_0,z_0)(x-x_0) + \pderiv{F}{y}(x_0,y_0,z_0)(y-y_0) + \pderiv{F}{z}(x_0,y_0,z_0)(z-z_0) &= 0
+\end{align*}
+So the vector $\Grad{f}(x_0,y_0,z_0)$ is in the direction normal to the tangent plane.
+\end{proof}
+
+\begin{example}
+% Rogawski 14.5.38
+Find a vector normal to the surface $x^2 + y^2 - z^2 = 6$ at $P=(3,1,2)$.
+\end{example}
+\begin{solution}
+Let $f(x,y,z) =x^2 + y^2 - z^2$.
+We have 
+\[
+	\Grad{f}(x,y,z) = \Veclist{2x,2y,-2z}
+\]
+which at the point $P=(3,1,2)$ is $\Veclist{6,2,-4}$.
+\end{solution}
+
+
+
+\mode<article>{%
+\section*{Guided Practice}}
+
+\Do{Worksheet}
+
+\mode<article>{%
+\section*{Closure}}
+\timecheck{\LARGE\clock{9}{50}}
+
+\begin{frame}{Summary}
+\begin{itemize}
+\item directional derivative $D_{\Vector{u}}f$
+\item gradient $\Grad{f}$
+\end{itemize}
+\end{frame}
+
+Notice the directional derivative, gradient, and differential all contain the same amount of information in them:
+\begin{align*}
+    D_{\Veclist{a,b}}(f)(x_0,y_0) &= \pderiv{f}{x}(x_0,y_0)a + \pderiv{f}{y}(x_0,y_0)b \\
+    \Grad{f}(x_0,y_0) &= \pderiv{f}{x}(x_0,y_0)\ihat + \pderiv{f}{y}(x_0,y_0)\jhat \\
+    df(x_0,y_0) &= \pderiv{f}{x}(x_0,y_0)\,dx + \pderiv{f}{y}(x_0,y_0)\,dy \\
+\end{align*}
+The gradient and differential are “dual” to each other in a sense (take MATH-UA 224 Vector Analysis for more).
+Different perspectives are useful in different situations.
+
+What's next: We want to use the gradient to find maxima and minima of functions.
+
+
+
+\mode<article>{%
+\section*{Independent Practice}
+
+\subsection*{Homework problems}
+
+\begin{itemize}
+\item WebAssign
+\end{itemize}
+
+}% end mode<article>
+
+
+\bibliographystyle{amsalpha}
+\bibliography{undergrad-textbooks}
+
+
+\end{document}
+%</lesson>
+%<*worksheet>
+\usetikzlibrary{MATH-UA-123}
+\usepackage{leincalc}
+
+\newcommand{\va}{\Vector{a}}
+\newcommand{\vb}{\Vector{b}}
+\newcommand{\vc}{\Vector{c}}
+\newcommand{\vr}{\Vector{r}}
+\newcommand{\vtau}{\Vector{\pmb{\tau}}}
+\newcommand{\vzero}{\Vector{\pmb{0}}}
+
+% Fix links with images in them.
+% See http://tex.stackexchange.com/questions/31819/xelatex-includegraphics-and-hyperlink
+% and http://www.tug.org/pipermail/xetex/2005-October/002480.html
+\newsavebox{\ximagebox}
+\newlength{\ximageheight}
+\newsavebox{\xglyphbox}
+\newlength{\xglyphheight}
+\newcommand{\xbox}[1]%
+  {\savebox{\ximagebox}{#1}%
+  \settoheight{\ximageheight}{\usebox{\ximagebox}}%
+  \savebox{\xglyphbox}{\char32}%
+  \settoheight{\xglyphheight}{\usebox{\xglyphbox}}%
+  \raisebox{\ximageheight}[0pt][0pt]{\raisebox{-\xglyphheight}[0pt][0pt]{%
+    \makebox[0pt][l]{\usebox{\xglyphbox}}}}%
+    \usebox{\ximagebox}%
+    \raisebox{0pt}[0pt][0pt]{\makebox[0pt][r]{\usebox{\xglyphbox}}}}
+\newcommand{\walphalink}[1]{\marginpar{\href{#1}{\xbox{\includegraphics{wolfram_alpha_icon.png}}}}}
+
+
+\newcommand{\newVector}[2]{
+	\newcommand{#1}{\Vector{#2}}
+}
+\newVector{\vF}{F}
+
+\usepackage{hyperref}
+%<solutions>\let\Vfill\relax
+%<!solutions>\let\Vfill\vfill
+%<solutions>\let\Clearpage\relax
+%<!solutions>\let\Clearpage\clearpage
+\usepackage{datatool}
+\DTLloaddb{announcements}{../announcements.csv}
+\dtlsort{endDate}{announcements}{\dtlcompare}
+\begin{document}
+\maketitle
+
+
+
+%: worksheet problems
+\problemfont
+
+\begin{problems}
+\item 
+Find the directional derivative of $f(x,y,z) = xe^{-yz}$ in the direction $\Vector{u} = \Veclist{\frac{1}{\sqrt{3}},\frac{1}{\sqrt{3}},\frac{1}{\sqrt{3}}}$ at the point $(1,2,0)$.
+
+\begin{solution}
+We have
+\begin{align*}
+	D_{\Vector{u}}f(1,2,0) 
+	&= \left.\D{}{t}f\left(1 + \frac{1}{\sqrt{3}} t, 2 + \frac{1}{\sqrt{3}} t, 0 + \frac{1}{\sqrt{3}} t\right)\right|_{t=0} \\
+	&= \left.\D{}{t}\left(1 + \frac{1}{\sqrt{3}} t\right) e^{-\left(2 + \frac{1}{\sqrt{3}} t\right)\left(0 + \frac{1}{\sqrt{3}} t\right)}\right|_{t=0} \\
+	&= \left[
+		\frac{1}{\sqrt{3}}  e^{-\frac{2}{\sqrt{3}}t - \frac{1}{3}t^2}
+		+ \left(1 + \frac{1}{\sqrt{3}} t\right) e^{-\frac{2}{\sqrt{3}}t - \frac{1}{3}t^2}\left(-\frac{2}{\sqrt{3}} - \frac{2}{3}t\right) 
+	\right]_{t=0} \\
+	&= \frac{1}{\sqrt{3}} - \frac{2}{\sqrt{3}} = - \frac{1}{\sqrt{3}}
+\end{align*}
+\end{solution}
+
+\vfill\item
+Let $f(x,y,z) = x \ln(y+z)$, and $\Vector{u}$ be the unit vector in the direction 
+of $\Vector{v} = 2\Vector{i} - \Vector{j} + \Vector{k}$.
+Use the gradient to find $D_{\Vector{u}}f(2,e,e)$
+
+\begin{solution}
+We have
+\[
+\Grad{f}(x,y,z) = \Veclist{\Log{(y+z)},\frac{x}{y+z},\frac{y}{y+z}}
+\]so
+\[
+\Grad{f}(2,e,e)= \Veclist{\Log{2e},\frac{1}{e},\frac{1}{e}} =  \Veclist{\Log{2} + 1,\frac{1}{e},\frac{1}{e}}
+\]
+Now $\Vector{u} = \frac{1}{\Norm{\Vector{v}}} \Vector{v}$, so
+\[
+D_{\Vector{u}}f(2,e,e) = \frac{\Veclist{\Log{2} + 1,\frac{1}{e},\frac{1}{e}} \cdot \Veclist{2,-1,1}}{\sqrt{2^2 + (-1)^2 + 1^2}}
+= \frac{2 \Log{2} + 2}{\sqrt{6}}
+\]
+\end{solution}
+
+\vfill
+\clearpage
+\item % chain rule
+% Rogawski 37
+Let $T(x,y)$ be the temperature at location $(x,y)$.
+Assume that $\Grad{T}(x,y)=\Veclist{y-4,x+2y}$.
+Let $\Vector{c}(t)=(t^2,t)$ be a path in the plane.
+Find the values of $t$ such that $\frac{d}{dt}T(\Vector{c}(t)) = 0$.
+
+\begin{solution}
+Using the chain rule we have
+\begin{align*}
+\D{}{t}T(\Vector{c}(t))	
+&= \Grad{T}(\Vector{c}(t)) \cdot \Vector{c}'(t) 
+= \Grad{T}(t^2,t)\cdot\Veclist{2t,1}
+= \Veclist{t-4,t^2 + 2t}\cdot\Veclist{2t,1} \\
+&= (t-4)(2t) + (t^2+2t)(1) = 3t^2 - 6t
+\end{align*}
+To say that $\D{}{t}T(\Vector{c}(t))=0$ is equivalent to
+\[
+0 = 3t^2 - 6t = 3t(t-2)
+\]
+So the $t$ values are $t=0$ and $t=2$.
+\end{solution}
+
+\vfill
+\item % normal vector Rogawski exercise 14.5.39
+Find a vector normal to the surface $3z^3 + x^2y - y^2x=1$ at $P=(1,-1,1)$.
+
+\begin{solution}
+The surface is of the form $f(x,y,z) = 1$, where
+\(
+	f(x,y,z) = 3z^3 + x^2y - y^2x
+\).  
+So the vector $\Grad{f}(1,-1,1)$ is normal (orthogonal) to the level surface at this point.
+Since
+\[
+	\Grad{f}(x,y,z) = \Veclist{2xy-y^2,x^2-2xy,9z^2}
+\]
+a normal vector is
+\[
+	\Vector{n} = \Grad{f}(1,-1,1) = \Veclist{-3,3,9}.
+\]
+\end{solution}
+
+
+\vfill\clearpage
+\item % tangent plane Rogawski exercise 14.5.42
+Find an equation of the tangent plane to the surface $xz+2x^2y + y^2 z^3=11$ 
+at the point $P=(2,1,1)$.
+
+\begin{solution}
+The surface is of the form $f(x,y,z) = 11$, where
+\(
+	f(x,y,z) = xz+2x^2y + y^2 z^3
+\).  
+So the vector $\Grad{f}(2,1,1)$ is normal (orthogonal) to the level surface at this point.
+Since
+\[
+	\Grad{f}(x,y,z) = \Veclist{z+4xy,2x^2+2yz^3,x+3y^2z^2}
+\]
+a normal vector is
+\[
+	\Vector{n} = \Grad{f}(2,1,1) = \Veclist{9,10,5}.
+\]
+The tangent plane to the surface through $(2,1,1)$ is normal to $\Veclist{9,10,5}$.  So it has vector equation
+\[
+	\Veclist{x-2,y-1,z-1}\cdot \Veclist{9,10,5} = 0
+\]
+or scalar equation
+\[
+	9(x-2) + 10(y-1) + 5(z-1) = 0
+	\iff
+	9x + 10y - 5z = 33
+\]
+\end{solution}
+
+
+
+\vfill\item % Rogawski 14.5.45
+Show that every plane tangent to the cone $z^2=x^2 +y^2$ passes through the origin.
+
+\begin{solution}
+Let $(a,b,c)$ be a point on the cone.  We will show the plane through $(a,b,c)$ tangent to the cone must contain $(0,0,0)$.
+
+The cone can be described as the level surface $f(x,y,z) = 0$, where $f(x,y,z) = x^2 + y^2 - z^2$.  Since
+\(
+	\Grad{f}(x,y,z) = \Veclist{2x,2y,-2z}
+\), 
+the vector $\Veclist{2a,2b,-2c}$ is normal to the cone at $(a,b,c)$.
+We might as well drop the extra factor of $2$: 
+the vector $\Veclist{a,b,-c}$ is normal to the cone at $(a,b,c)$.
+This means an equation for the tangent plane to the cone at $(a,b,c)$ is
+\[
+	\Veclist{x-a,y-b,z-c}\cdot \Veclist{a,b,-c} = 0 \iff (x-a)a + (y-b)(b) + (z-c)(-c) = 0
+\]
+Putting the equation on the right in standard form gives
+\[
+	ax + by -cz = a^2 + b^2 - c^2 
+\]	
+But since $(a,b,c)$ is on the cone, the right-hand side is $0$.  This means the scalar equation has no constant term; i.e., the plane passes through the origin.
+\end{solution}
+
+
+\vfill\clearpage
+\item % Rogawski 14.5.50
+Find a function $f(x,y,z)$ such that $\Grad{f}=\Veclist{z,2y,x}$
+
+\begin{solution}
+We are looking for $f(x,y,z)$ such that $\pderiv{f}{x} = z$, $\pderiv{f}{y} = 2y$, and $\pderiv{f}{z} = x$.
+We can ``partially integrate'', but the constant is different than in the single-variable sense.  Integrating 
+$\pderiv{f}{x} = z$ with respect to $x$ gives $f(x,y,z) = xz + g(y,z)$, for some function $g(y,z)$ (which is ``constant'' with respect to $x$).  Thus $\pderiv{f}{y} = \pderiv{g}{y}$, and we want this to be equal to $2y$.  So $g(y,z) = y^2 + h(z)$.
+Finally, $\pderiv{f}{z} = x + h'(z)$, and we want this to be equal to $x$.  So $h'(z) = 0$, meaning $h$ is a constant.  Thus
+\[
+	f(x,y,z) = xz + y^2 + C
+\]
+\end{solution}
+
+\vfill\item % Rogawski 14.5.51
+Show that there is no function $f(x,y)$ such that $\Grad{f}=\Veclist{y^2,x}$.
+Hint: Clairaut's Theorem.
+
+\begin{solution}
+As above, since the components of $\Veclist{y^2,x}$ are polynomials with continuous derivatives, $f$ would have to satisfy Clairaut's theorem.  But $f_{x} = y^2$ means $f_{xy} = 2y$, and $f_{y} = x$ means $f_{yx} = 1$.  This is a contradiction.
+\end{solution}
+\end{problems}
+
+%<!solutions>\vfill
+
+\end{document}
+%</worksheet>
