@@ -66,6 +66,36 @@ def fix_tabs(text):
     return text.replace('\t','    ')
 
 
+def fix_driver_block(text):
+    """Update the DocStrip “driver“ block at the head of the file"""
+    driver_block = r"""%<*dtx>
+%%!TEX TS-program = dtxmake
+%</dtx>
+%<*driver>
+\\input docstrip.tex
+\\declarepreamble\\xelatexmkpreamble
+\\space
+!TEX TS-program = xelatexmk
+\\endpreamble
+\\askforoverwritefalse
+\\generate{
+    \\file{\\jobname.ws.tex}{\\from{\\jobname.dtx}{worksheet}}
+    \\file{\\jobname.ws-sol.tex}{\\from{\\jobname.dtx}{worksheet,solutions}}
+    \\usepreamble\\xelatexmkpreamble
+    \\file{\\jobname.slides.tex}{\\from{\\jobname.dtx}{slides,lesson}}
+    \\file{\\jobname.handout.tex}{\\from{\\jobname.dtx}{handout,lesson}}    
+    \\file{\\jobname.lp.tex}{\\from{\\jobname.dtx}{lesson,plan}}
+}
+\\endbatchfile
+%</driver>"""
+    text = re.sub(
+        r'.*</driver>',
+        driver_block,
+        text,
+        flags=re.DOTALL)
+    return text
+
+
 # Command line helpers
 def set_log_level(ctx, param, value):
     """Set the logging level"""
@@ -111,6 +141,7 @@ def process_option_date(ctx,param,value):
 def cli(date,input):
     logging.info("Hello, world!")
     text = input.read().decode()
+    text = fix_driver_block(text)
     text = fix_date(text,date)
     text = fix_article_only_sections(text)
     text = fix_quotes(text)
