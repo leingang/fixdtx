@@ -2,13 +2,17 @@
 
 from datetime import datetime
 import logging
+import os.path
 import re
+import sys
 
 import click
 
 def add_signature(text):
     """Add a program signature line"""
-    text += "%% Fixed by {} on {}".format(__name__,datetime.now().isoformat())
+    script_name = os.path.basename(sys.argv[0])
+    fdate = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    text += f"% Fixed by {script_name} on {fdate}"
     return text
 
 
