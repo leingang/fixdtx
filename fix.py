@@ -29,7 +29,7 @@ def fix_date(text,date):
 
 
 def fix_article_only_sections(text):
-    """Update sections that are declared article mode only.
+    """Update sections that are declared article mode only
     
     Fix strings like:
 
@@ -48,6 +48,18 @@ def fix_article_only_sections(text):
     return text
 
 
+def fix_quotes(text):
+    """Replace ASCII TeX quotes with UTF curly quotes"""
+    open_quote = re.escape(r"``")
+    close_quote = re.escape(r"''")
+    text = re.sub(
+        open_quote + r"(.*?)" + close_quote, 
+        r"“\1”",
+        text,
+        flags=re.MULTILINE
+    )
+    return text
+
 # Command line helpers
 def set_log_level(ctx, param, value):
     """Set the logging level"""
@@ -58,6 +70,7 @@ def set_log_level(ctx, param, value):
     if value:
         logging.basicConfig(level=levels[param.name])
 
+
 def process_option_date(ctx,param,value):
     """Convert the string date provided on the command line
     to a `datetime.datetime` object"""
@@ -66,6 +79,7 @@ def process_option_date(ctx,param,value):
     else:
         result = datetime.fromisoformat(value)
     return result 
+
 
 @click.command(
     help="""Update lesson docstrip files
@@ -85,7 +99,7 @@ def process_option_date(ctx,param,value):
     expose_value=False,
     callback=set_log_level)
 @click.option('--date',
-    help='date to stamp file (ISO 8601 format)',
+    help='date to stamp lesson (ISO 8601 format)',
     default=None,
     callback=process_option_date)
 def cli(date,input):
@@ -93,6 +107,7 @@ def cli(date,input):
     text = input.read().decode()
     text = fix_date(text,date)
     text = fix_article_only_sections(text)
+    text = fix_quotes(text)
     text = add_signature(text)
     print(text)
 
