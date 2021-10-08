@@ -53,14 +53,7 @@ def fix_article_only_sections(text):
 
 def fix_quotes(text):
     """Replace ASCII TeX quotes with UTF curly quotes"""
-    open_quote = re.escape(r"``")
-    close_quote = re.escape(r"''")
-    text = re.sub(
-        open_quote + r"(.*?)" + close_quote, 
-        r"“\1”",
-        text,
-        flags=re.MULTILINE
-    )
+    text = re.sub(r"``(.*?)''",r"“\1”",text,flags=re.MULTILINE)
     text = re.sub(r"`(.*?)'",r"‘\1’",text,flags=re.MULTILINE)
     return text
 
