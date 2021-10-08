@@ -6,6 +6,36 @@ import os.path
 import re
 import sys
 
+DRIVER_BLOCK = r"""%<*dtx>
+%%!TEX TS-program = dtxmake
+%</dtx>
+%<*driver>
+\\input docstrip.tex
+\\declarepreamble\\xelatexmkpreamble
+\\space
+!TEX TS-program = xelatexmk
+\\endpreamble
+\\askforoverwritefalse
+\\generate{
+    \\file{\\jobname.ws.tex}{\\from{\\jobname.dtx}{worksheet}}
+    \\file{\\jobname.ws-sol.tex}{\\from{\\jobname.dtx}{worksheet,solutions}}
+    \\usepreamble\\xelatexmkpreamble
+    \\file{\\jobname.slides.tex}{\\from{\\jobname.dtx}{slides,lesson}}
+    \\file{\\jobname.handout.tex}{\\from{\\jobname.dtx}{handout,lesson}}    
+    \\file{\\jobname.lp.tex}{\\from{\\jobname.dtx}{lesson,plan}}
+}
+\\endbatchfile
+%</driver>"""
+
+DOCUMENTCLASS_DECLARATION=r"""\\documentclass
+%<slides|handout>[ignorenonframetext,aspectratio=169]
+%<slides>{ngelessonslides}
+%<handout>{ngelessonhandout}
+%<plan>{ngelessonplan}
+%<worksheet&solutions>[solutions]
+%<worksheet>{ngelessonworksheet}
+"""
+
 
 def add_signature(text):
     """Add a program signature line"""
@@ -31,7 +61,6 @@ def fix_article_only_sections(text):
     """Update sections that are declared article mode only
     
     Fix strings like:
-
         
         \\mode<article>{%
         \\section*{Objectives}
@@ -64,29 +93,9 @@ def fix_tabs(text):
 
 def fix_driver_block(text):
     """Update the DocStrip “driver“ block at the head of the file"""
-    driver_block = r"""%<*dtx>
-%%!TEX TS-program = dtxmake
-%</dtx>
-%<*driver>
-\\input docstrip.tex
-\\declarepreamble\\xelatexmkpreamble
-\\space
-!TEX TS-program = xelatexmk
-\\endpreamble
-\\askforoverwritefalse
-\\generate{
-    \\file{\\jobname.ws.tex}{\\from{\\jobname.dtx}{worksheet}}
-    \\file{\\jobname.ws-sol.tex}{\\from{\\jobname.dtx}{worksheet,solutions}}
-    \\usepreamble\\xelatexmkpreamble
-    \\file{\\jobname.slides.tex}{\\from{\\jobname.dtx}{slides,lesson}}
-    \\file{\\jobname.handout.tex}{\\from{\\jobname.dtx}{handout,lesson}}    
-    \\file{\\jobname.lp.tex}{\\from{\\jobname.dtx}{lesson,plan}}
-}
-\\endbatchfile
-%</driver>"""
     text = re.sub(
         r'.*</driver>',
-        driver_block,
+        DRIVER_BLOCK,
         text,
         flags=re.DOTALL)
     return text
@@ -95,15 +104,8 @@ def fix_driver_block(text):
 def fix_documentclass_declaration(text):
     """Update the `\\documentclass` declaration block"""
     text = re.sub(
-        r'\\documentclass.*\\title',
-        r"""\\documentclass
-%<slides|handout>[ignorenonframetext,aspectratio=169]
-%<slides>{ngelessonslides}
-%<handout>{ngelessonhandout}
-%<plan>{ngelessonplan}
-%<worksheet&solutions>[solutions]
-%<worksheet>{ngelessonworksheet}
-\\title""",
+        r'\\documentclass.*(?=\\title)',
+        DOCUMENTCLASS_DECLARATION,
         text,
         flags=re.DOTALL
     )
