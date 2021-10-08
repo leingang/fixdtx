@@ -1,7 +1,7 @@
 from datetime import datetime
 import pytest
 
-import fix
+from fixdtx import fix
 
 
 @pytest.mark.parametrize("test_input,expected",[
